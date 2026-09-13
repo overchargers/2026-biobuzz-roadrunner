@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Interactive Projectile Motion Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .controls-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .control-group h3 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        
+        .slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        
+        .input-field {
+            width: 60px;
+            padding: 5px 8px;
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            background: white;
+            color: #333;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #45b7aa;
+            box-shadow: 0 0 5px rgba(78, 205, 196, 0.3);
+        }
+        
+        .input-field:invalid {
+            border-color: #ff6b6b;
+            background-color: #ffe6e6;
+        }
+        
+        .canvas-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        #projectileCanvas {
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            cursor: crosshair;
+            width: 480px;
+            height: 400px;
+        }
+        
+        .info-panel {
+            grid-column: 1 / -1;
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .physics-explanation {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .physics-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .physics-card h4 {
+            color: #4ecdc4;
+            margin: 0 0 10px 0;
+        }
+        
+        .button {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .button:hover {
+            background: #45b7aa;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .button.danger {
+            background: #ff6b6b;
+        }
+        
+        .button.danger:hover {
+            background: #ff5252;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .robot-connection {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .robot-connection h4 {
+            color: #856404;
+            margin: 0 0 10px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-panel > div {
+                grid-template-columns: 1fr !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Interactive Projectile Motion Simulator</h1>
+            <p>Learn physics by launching projectiles! Adjust the angle and speed to hit your target.</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <h3>🎯 Launch Parameters</h3>
+                    <div class="slider-container">
+                        <label for="angleSlider">Angle: </label>
+                        <input type="range" id="angleSlider" class="slider" min="0" max="90" value="45" step="1">
+                        <input type="number" id="angleInput" class="input-field" min="0" max="90" value="45" step="0.1" aria-label="Angle input">
+                    </div>
+                    <div class="slider-container">
+                        <label for="speedSlider">Speed: </label>
+                        <input type="range" id="speedSlider" class="slider" min="50" max="500" value="200" step="10">
+                        <input type="number" id="speedInput" class="input-field" min="50" max="500" value="200" step="1" aria-label="Speed input">
+                    </div>
+                    <div class="slider-container">
+                        <label for="robotHeightSlider">Robot Height: </label>
+                        <input type="range" id="robotHeightSlider" class="slider" min="0" max="24" value="12" step="1">
+                        <input type="number" id="robotHeightInput" class="input-field" min="0" max="24" value="12" step="0.1" aria-label="Robot height input">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🎯 Target Position</h3>
+                    <div class="slider-container">
+                        <label for="distanceSlider">Distance: </label>
+                        <input type="range" id="distanceSlider" class="slider" min="20" max="150" value="80" step="1">
+                        <input type="number" id="distanceInput" class="input-field" min="20" max="150" value="80" step="0.1" aria-label="Distance input">
+                    </div>
+                    <div class="slider-container">
+                        <label for="heightSlider">Height: </label>
+                        <input type="range" id="heightSlider" class="slider" min="-20" max="60" value="0" step="1">
+                        <input type="number" id="heightInput" class="input-field" min="-20" max="60" value="0" step="0.1" aria-label="Height input">
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>🎮 Controls</h3>
+                    <button class="button" onclick="showTrajectory()">📈 Calculate</button>
+                </div>
+                
+                <div id="status" class="status" style="display: none;"></div>
+            </div>
+            
+            <div class="canvas-container">
+                <canvas id="projectileCanvas" width="480" height="400"></canvas>
+                <p style="margin-top: 10px; color: #666;">
+                    Click on the canvas to set target position, or use the sliders above!<br>
+                    <strong>Scale:</strong> 3 pixels = 1 inch | <strong>Robot height:</strong> 12 inches | <strong>Range:</strong> -10 to 150 inches
+                </p>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div>
+                    <h3>📊 Projectile Information</h3>
+                    <div id="projectileInfo">
+                        <p><strong>Launch Angle:</strong> <span id="infoAngle">45°</span></p>
+                        <p><strong>Launch Speed:</strong> <span id="infoSpeed">200 in/s</span></p>
+                        <p><strong>Target Distance:</strong> <span id="infoDistance">80 in</span></p>
+                        <p><strong>Target Height:</strong> <span id="infoHeight">0 in</span></p>
+                        <p><strong>Flight Time:</strong> <span id="infoTime">0.0s</span></p>
+                        <p><strong>Max Height:</strong> <span id="infoMaxHeight">0.0 in</span></p>
+                        <p><strong>Range:</strong> <span id="infoRange">0.0 in</span></p>
+                    </div>
+                </div>
+                
+                <div class="physics-card">
+                    <h4>🔬 Projectile Motion Equation</h4>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; font-family: 'Courier New', monospace;">
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Horizontal Motion:</strong> x = v₀cos(θ) × t</p>
+                        <p style="margin: 5px 0; font-size: 14px;"><strong>Vertical Motion:</strong> y = v₀sin(θ) × t - ½gt²</p>
+                        <hr style="margin: 10px 0;">
+                        <p style="margin: 5px 0; font-size: 16px; color: #4ecdc4;"><strong>Solving for Velocity:</strong></p>
+                        <p style="margin: 5px 0; font-size: 14px;">v₀² = <span id="velocityFormula">gx² / (2cos²(θ)(x·tan(θ) - y))</span></p>
+                        <p style="margin: 5px 0; font-size: 12px; color: #666;">Where: g = 386.4 in/s², x = distance, y = height, θ = angle</p>
+                    </div>
+                    <div id="velocityCalculation" style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 10px; font-family: 'Courier New', monospace; font-size: 12px;">
+                        <p><strong>Current Calculation:</strong></p>
+                        <p id="calcStep1">v₀² = 386.4 × 80² / (2 × cos²(45°) × (80 × tan(45°) - 0))</p>
+                        <p id="calcStep2">v₀² = 386.4 × 6400 / (2 × 0.5 × (80 × 1 - 0))</p>
+                        <p id="calcStep3">v₀² = 2,472,960 / 80</p>
+                        <p id="calcStep4">v₀ = √30,912 = <span id="calcResult">175.8 in/s</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="physics-explanation">
+            <div class="physics-card">
+                <h4>🔬 What's Happening?</h4>
+                <p>When you launch a projectile, it follows a curved path called a <strong>parabola</strong>. This happens because:</p>
+                <ul>
+                    <li><strong>Horizontal motion:</strong> No force acts sideways, so it moves at constant speed</li>
+                    <li><strong>Vertical motion:</strong> Gravity pulls the projectile down, making it accelerate downward</li>
+                    <li><strong>Result:</strong> The combination creates a curved trajectory!</li>
+                </ul>
+            </div>
+            
+            <div class="physics-card">
+                <h4>🎯 Hitting Your Target</h4>
+                <p>To hit a target, you need to consider:</p>
+                <ul>
+                    <li><strong>Distance:</strong> How far away is it?</li>
+                    <li><strong>Height:</strong> Is it above or below you?</li>
+                    <li><strong>Angle:</strong> Higher angles = higher arc, lower angles = flatter path</li>
+                    <li><strong>Speed:</strong> More speed = longer range</li>
+                </ul>
+            </div>
+            
+            <div class="physics-card">
+                <h4>🤖 Robot Connection</h4>
+                <p>This is exactly how our FTC robot's ballistic calculator works! It:</p>
+                <ul>
+                    <li>Measures the distance to the target using cameras</li>
+                    <li>Calculates the perfect angle and power</li>
+                    <li>Launches the ball with precise timing</li>
+                    <li>Accounts for gravity, air resistance, and robot height</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="robot-connection">
+            <h4>🤖 Real Robot Physics</h4>
+            <p>Our FTC robot uses the same physics principles! The <code>BallisticCalculator</code> class:</p>
+            <ul>
+                <li>Uses gravity = 386.4 inches/s² (32.2 ft/s² converted)</li>
+                <li>Calculates optimal launch angles between 30° and 66°</li>
+                <li>Accounts for robot height (12 inches) and target height (up to 60 inches)</li>
+                <li>Converts velocity to motor power for precise control</li>
+                <li>Uses inches and inches per second</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and drawing context
+        const canvas = document.getElementById('projectileCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Physics constants
+        const GRAVITY = 386.4; // inches/s² (matches robot's BallisticCalculator)
+        const SCALE = 3; // pixels per inch (better for visualization)
+        
+        // State variables
+        let isAnimating = false;
+        let animationId = null;
+        let trajectory = [];
+        let targetX = 240; // 80 inches * 3 pixels/inch
+        let targetY = 200; // Ground level
+        
+        // Get DOM elements
+        const angleSlider = document.getElementById('angleSlider');
+        const speedSlider = document.getElementById('speedSlider');
+        const robotHeightSlider = document.getElementById('robotHeightSlider');
+        const distanceSlider = document.getElementById('distanceSlider');
+        const heightSlider = document.getElementById('heightSlider');
+        
+        const angleInput = document.getElementById('angleInput');
+        const speedInput = document.getElementById('speedInput');
+        const robotHeightInput = document.getElementById('robotHeightInput');
+        const distanceInput = document.getElementById('distanceInput');
+        const heightInput = document.getElementById('heightInput');
+        
+        
+        const status = document.getElementById('status');
+        
+        // Initialize
+        updateDisplay();
+        drawScene();
+        
+        // Event listeners for sliders
+        angleSlider.addEventListener('input', function() {
+            angleInput.value = angleSlider.value;
+            updateDisplay();
+        });
+        speedSlider.addEventListener('input', function() {
+            speedInput.value = speedSlider.value;
+            updateDisplay();
+        });
+        robotHeightSlider.addEventListener('input', function() {
+            robotHeightInput.value = robotHeightSlider.value;
+            updateDisplay();
+        });
+        distanceSlider.addEventListener('input', function() {
+            distanceInput.value = distanceSlider.value;
+            updateDisplay();
+        });
+        heightSlider.addEventListener('input', function() {
+            heightInput.value = heightSlider.value;
+            updateDisplay();
+        });
+        
+        // Event listeners for input fields
+        angleInput.addEventListener('input', function() {
+            const value = Math.max(0, Math.min(90, Number.parseFloat(angleInput.value) || 0));
+            angleInput.value = value;
+            angleSlider.value = value;
+            updateDisplay();
+        });
+        speedInput.addEventListener('input', function() {
+            const value = Math.max(50, Math.min(500, Number.parseFloat(speedInput.value) || 50));
+            speedInput.value = value;
+            speedSlider.value = value;
+            updateDisplay();
+        });
+        robotHeightInput.addEventListener('input', function() {
+            const value = Math.max(0, Math.min(24, Number.parseFloat(robotHeightInput.value) || 0));
+            robotHeightInput.value = value;
+            robotHeightSlider.value = value;
+            updateDisplay();
+        });
+        distanceInput.addEventListener('input', function() {
+            const value = Math.max(20, Math.min(150, Number.parseFloat(distanceInput.value) || 20));
+            distanceInput.value = value;
+            distanceSlider.value = value;
+            updateDisplay();
+        });
+        heightInput.addEventListener('input', function() {
+            const value = Math.max(-20, Math.min(60, Number.parseFloat(heightInput.value) || 0));
+            heightInput.value = value;
+            heightSlider.value = value;
+            updateDisplay();
+        });
+        
+        canvas.addEventListener('click', handleCanvasClick);
+        
+        function updateDisplay() {
+            const distance = Number.parseFloat(distanceSlider.value);
+            const height = Number.parseFloat(heightSlider.value);
+            
+            // Update target position
+            targetX = (distance + 10) * SCALE; // Offset by 10 to account for -10 start
+            targetY = 300 - height * SCALE;
+            
+            drawScene();
+        }
+        
+        function handleCanvasClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            // Convert canvas coordinates to world coordinates
+            const worldX = (x / SCALE) - 10; // Subtract 10 to account for -10 start
+            const worldY = (300 - y) / SCALE;
+            
+            // Update sliders and input fields
+            const distanceValue = Math.max(20, Math.min(150, worldX));
+            const heightValue = Math.max(-20, Math.min(60, worldY));
+            
+            distanceSlider.value = distanceValue;
+            distanceInput.value = distanceValue;
+            heightSlider.value = heightValue;
+            heightInput.value = heightValue;
+            
+            updateDisplay();
+        }
+        
+        function drawScene() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ground line
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(30, 300); // Start at -10 inches * 3 pixels/inch = -30, but offset by 30
+            ctx.lineTo(480, 300); // 150 inches * 3 pixels/inch + 30 offset = 480
+            ctx.stroke();
+            
+            // Draw inch markers on ground (every 20 inches)
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.font = '10px Arial';
+            ctx.fillStyle = '#666';
+            for (let i = -10; i <= 150; i += 20) {
+                const x = (i + 10) * SCALE; // Offset by 10 to account for -10 start
+                if (x <= 480) { // 150 inches * 3 pixels/inch + 30 offset = 480
+                    ctx.beginPath();
+                    ctx.moveTo(x, 295);
+                    ctx.lineTo(x, 305);
+                    ctx.stroke();
+                    ctx.fillText(i + '"', x - 5, 320);
+                }
+            }
+            
+            // Draw y-axis (height markers)
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.font = '10px Arial';
+            ctx.fillStyle = '#666';
+            
+            // Draw vertical axis line
+            ctx.beginPath();
+            ctx.moveTo(30, 20); // Start at top
+            ctx.lineTo(30, 300); // End at ground level
+            ctx.stroke();
+            
+            // Draw height markers (every 20 inches)
+            for (let i = 0; i <= 60; i += 20) {
+                const y = 300 - i * SCALE; // Convert height to canvas y coordinate
+                if (y >= 20) { // Don't draw above canvas
+                    ctx.beginPath();
+                    ctx.moveTo(25, y);
+                    ctx.lineTo(35, y);
+                    ctx.stroke();
+                    ctx.fillText(i + '"', 5, y + 3);
+                }
+            }
+            
+            // Draw negative height markers (below ground)
+            for (let i = -20; i < 0; i += 20) {
+                const y = 300 - i * SCALE; // Convert height to canvas y coordinate
+                if (y <= 300) { // Don't draw below ground
+                    ctx.beginPath();
+                    ctx.moveTo(25, y);
+                    ctx.lineTo(35, y);
+                    ctx.stroke();
+                    ctx.fillText(i + '"', 5, y + 3);
+                }
+            }
+            
+            // Draw axis labels
+            ctx.font = 'bold 12px Arial';
+            ctx.fillStyle = '#333';
+            
+            // X-axis label (Distance)
+            ctx.save();
+            ctx.translate(255, 340); // Center of x-axis
+            ctx.rotate(0); // No rotation for horizontal text
+            ctx.fillText('Distance (inches)', 0, 0);
+            ctx.restore();
+            
+            // Y-axis label (Height)
+            ctx.save();
+            ctx.translate(10, 160); // Center of y-axis
+            ctx.rotate(-Math.PI / 2); // Rotate 90 degrees counterclockwise
+            ctx.fillText('Height (inches)', 0, 0);
+            ctx.restore();
+            
+            // Draw launcher (robot) - center at (0,0)
+            const robotHeight = Number.parseFloat(robotHeightInput.value);
+            const robotHeightPixels = robotHeight * SCALE;
+            const robotCenterX = 30; // Offset by 30 pixels to account for -10 start
+            const robotCenterY = 300 - robotHeightPixels; // Robot center Y in canvas coordinates
+            
+            // Draw robot centered at (0,0) in world coordinates
+            const robotLeft = robotCenterX - 9; // Half of 18px width
+            const robotTop = robotCenterY - 9; // Center the robot on the center point
+            
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillRect(robotLeft, robotTop, 18, 18); // Fixed 6-inch robot size
+            ctx.fillStyle = '#2a9d8f';
+            ctx.fillRect(robotLeft + 1, robotTop + 1, 16, 16);
+            
+            // Draw launcher label
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('Robot', robotLeft - 5, robotTop - 5);
+            
+            // Draw target
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(targetX, targetY, 10, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw target post if above ground
+            if (targetY < 300) {
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(targetX, 300);
+                ctx.lineTo(targetX, targetY);
+                ctx.stroke();
+            }
+            
+            // Draw target label
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('Target', targetX - 15, targetY - 15);
+            
+            // Robot center coordinates (already in canvas coordinates)
+            const canvasRobotX = robotCenterX; // Already offset by 30 pixels
+            const canvasRobotY = robotCenterY; // Already converted to canvas coordinates
+            
+            // Draw trajectory if available
+            if (trajectory.length > 0) {
+                ctx.strokeStyle = '#ff6b6b';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([8, 4]);
+                ctx.beginPath();
+                ctx.moveTo(canvasRobotX, canvasRobotY); // Start from robot center
+                for (let i = 0; i < trajectory.length; i += 2) {
+                    ctx.lineTo(trajectory[i], trajectory[i + 1]);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Draw angle indicator
+            const angle = Number.parseFloat(angleInput.value);
+            const angleRad = (angle * Math.PI) / 180;
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(canvasRobotX, canvasRobotY); // Start from robot center
+            ctx.lineTo(canvasRobotX + 40 * Math.cos(angleRad), canvasRobotY - 40 * Math.sin(angleRad));
+            ctx.stroke();
+            
+            // Draw angle label
+            ctx.fillStyle = '#4ecdc4';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText(angle + '°', canvasRobotX + 45 * Math.cos(angleRad), canvasRobotY - 45 * Math.sin(angleRad));
+        }
+        
+        function calculateTrajectory(angle, speed, targetX, targetY) {
+            const angleRad = (angle * Math.PI) / 180;
+            const vx = speed * Math.cos(angleRad);
+            const vy = speed * Math.sin(angleRad);
+            
+            // Calculate robot center position
+            const robotHeight = Number.parseFloat(robotHeightInput.value);
+            const robotHeightPixels = robotHeight * SCALE;
+            const robotCenterX = 30; // Offset by 30 pixels to account for -10 start
+            const robotCenterY = 300 - robotHeightPixels; // Robot center Y in canvas coordinates
+            
+            const points = [];
+            let x = 0;
+            let y = 0;
+            let t = 0;
+            const dt = 0.1;
+            
+            while (y >= 0 && x < 160) { // Limit to 160 inches max distance (150 + 10 offset)
+                x = vx * t;
+                y = vy * t - 0.5 * GRAVITY * t * t;
+                
+                if (y >= 0) {
+                    points.push(robotCenterX + x * SCALE, robotCenterY - y * SCALE); // Offset from robot center
+                }
+                t += dt;
+            }
+            
+            return points;
+        }
+        
+        function launchProjectile() {
+            if (isAnimating) return;
+            
+            const angle = Number.parseFloat(angleInput.value);
+            const speed = Number.parseFloat(speedInput.value);
+            
+            trajectory = calculateTrajectory(angle, speed, targetX, targetY);
+            
+            // Calculate physics info
+            const angleRad = (angle * Math.PI) / 180;
+            const vx = speed * Math.cos(angleRad);
+            const vy = speed * Math.sin(angleRad);
+            
+            const flightTime = (2 * vy) / GRAVITY;
+            const maxHeight = (vy * vy) / (2 * GRAVITY);
+            const range = vx * flightTime;
+            
+            // Update info display
+            document.getElementById('infoAngle').textContent = angle + '°';
+            document.getElementById('infoSpeed').textContent = speed + ' in/s';
+            document.getElementById('infoDistance').textContent = (targetX / SCALE).toFixed(1) + ' in';
+            document.getElementById('infoHeight').textContent = ((300 - targetY) / SCALE).toFixed(1) + ' in';
+            document.getElementById('infoTime').textContent = flightTime.toFixed(2) + 's';
+            document.getElementById('infoMaxHeight').textContent = maxHeight.toFixed(1) + ' in';
+            document.getElementById('infoRange').textContent = range.toFixed(1) + ' in';
+            
+            // Check if hit
+            const robotHeight = Number.parseFloat(robotHeightInput.value);
+            const robotHeightPixels = robotHeight * SCALE;
+            const robotX = 30; // Robot center X (offset by 30 pixels)
+            const robotY = 300 - robotHeightPixels; // Robot center Y
+            const hitDistance = Math.sqrt((targetX - (robotX + vx * flightTime * SCALE)) * (targetX - (robotX + vx * flightTime * SCALE)) + 
+                                        (targetY - (robotY - (vy * flightTime - 0.5 * GRAVITY * flightTime * flightTime) * SCALE)) * 
+                                        (targetY - (robotY - (vy * flightTime - 0.5 * GRAVITY * flightTime * flightTime) * SCALE)));
+            
+            if (hitDistance < 15) {
+                showStatus('🎯 HIT! Great shot!', 'success');
+            } else {
+                showStatus('❌ Miss! Try adjusting the angle or speed.', 'error');
+            }
+            
+            drawScene();
+        }
+        
+        function showTrajectory() {
+            const angle = Number.parseFloat(angleInput.value);
+            const speed = Number.parseFloat(speedInput.value);
+            const robotHeight = Number.parseFloat(robotHeightInput.value);
+            const distance = Number.parseFloat(distanceInput.value);
+            const height = Number.parseFloat(heightInput.value);
+            
+            trajectory = calculateTrajectory(angle, speed, targetX, targetY);
+            
+            // Calculate physics info
+            const angleRad = (angle * Math.PI) / 180;
+            const vx = speed * Math.cos(angleRad);
+            const vy = speed * Math.sin(angleRad);
+            
+            const flightTime = (2 * vy) / GRAVITY;
+            const maxHeight = (vy * vy) / (2 * GRAVITY);
+            const range = vx * flightTime;
+            
+            // Update projectile information display
+            document.getElementById('infoAngle').textContent = angle + '°';
+            document.getElementById('infoSpeed').textContent = speed + ' in/s';
+            document.getElementById('infoDistance').textContent = distance.toFixed(1) + ' in';
+            document.getElementById('infoHeight').textContent = height.toFixed(1) + ' in';
+            document.getElementById('infoTime').textContent = flightTime.toFixed(2) + 's';
+            document.getElementById('infoMaxHeight').textContent = maxHeight.toFixed(1) + ' in';
+            document.getElementById('infoRange').textContent = range.toFixed(1) + ' in';
+            
+            // Calculate required velocity using projectile motion equation
+            updateProjectileEquation(angle, distance, height, robotHeight);
+            
+            drawScene();
+        }
+        
+        function updateProjectileEquation(angle, distance, height, robotHeight) {
+            const angleRad = (angle * Math.PI) / 180;
+            const g = GRAVITY;
+            
+            // Calculate velocity using the ballistic formula
+            const cosAngle = Math.cos(angleRad);
+            const tanAngle = Math.tan(angleRad);
+            const x = distance;
+            const y = height - robotHeight; // Adjust for robot height
+            
+            // v₀² = gx² / (2cos²(θ)(x·tan(θ) - y))
+            const velocitySquared = (g * x * x) / (2 * cosAngle * cosAngle * (x * tanAngle - y));
+            const calculatedVelocity = Math.sqrt(velocitySquared);
+            
+            // Update the formula display
+            document.getElementById('velocityFormula').textContent = 
+                `gx² / (2cos²(θ)(x·tan(θ) - y))`;
+            
+            // Update step-by-step calculation
+            document.getElementById('calcStep1').textContent = 
+                `v₀² = ${g} × ${x}² / (2 × cos²(${angle}°) × (${x} × tan(${angle}°) - (${height} - ${robotHeight})))`;
+            
+            document.getElementById('calcStep2').textContent = 
+                `v₀² = ${g} × ${x * x} / (2 × ${cosAngle.toFixed(3)}² × (${x} × ${tanAngle.toFixed(3)} - ${y.toFixed(1)}))`;
+            
+            document.getElementById('calcStep3').textContent = 
+                `v₀² = ${(g * x * x).toFixed(0)} / (2 × ${(cosAngle * cosAngle).toFixed(3)} × (${(x * tanAngle).toFixed(1)} - ${y.toFixed(1)}))`;
+            
+            document.getElementById('calcStep4').innerHTML = 
+                `v₀ = √${velocitySquared.toFixed(0)} = <span id="calcResult">${calculatedVelocity.toFixed(1)} in/s</span>`;
+        }
+        
+        function resetSimulation() {
+            trajectory = [];
+            status.style.display = 'none';
+            drawScene();
+        }
+        
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

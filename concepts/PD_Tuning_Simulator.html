@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PD Controller Tuning Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 30px;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .control-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+        }
+        .simulation-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            position: relative;
+            user-select: none;
+        }
+        .robot {
+            width: 40px;
+            height: 40px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.05s ease;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: move;
+            transform-origin: center;
+        }
+        .robot.oscillating {
+            animation: shake 0.1s infinite;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0px) rotate(0deg); }
+            25% { transform: translateX(-2px) rotate(-1deg); }
+            75% { transform: translateX(2px) rotate(1deg); }
+        }
+        .robot:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        .robot:hover::after {
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .robot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -15px;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 15px solid #ffd700;
+            z-index: 1;
+        }
+        .robot::after {
+            content: '🤖';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            z-index: 2;
+        }
+        .target {
+            width: 30px;
+            height: 30px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            position: absolute;
+            border: 3px solid #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .target::after {
+            content: '🎯';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+        }
+        .control-instructions {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .rotation-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .rotate-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            user-select: none;
+        }
+        .rotate-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .rotate-btn:active {
+            transform: translateY(0);
+        }
+        .rotate-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .control-group {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: #ddd;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff6b6b;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .value-display {
+            color: #4ecdc4;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .status-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .metric:last-child {
+            border-bottom: none;
+        }
+        .metric-label {
+            color: #ccc;
+        }
+        .metric-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .graph-container {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+            position: relative;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+        }
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .preset-btn {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+        .preset-btn:hover {
+            background: #45b7aa;
+        }
+        .preset-btn.active {
+            background: #ff6b6b;
+        }
+        .scenario-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .scenario-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .scenario-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .explanation {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        .formula-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            color: #4ecdc4;
+        }
+        .analogy-box {
+            background: rgba(255, 215, 0, 0.1);
+            border-left: 4px solid #ffd700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .performance-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .excellent { background: #4ecdc4; }
+        .good { background: #45b7aa; }
+        .fair { background: #ffd700; }
+        .poor { background: #ff6b6b; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 PD Controller Tuning Simulator</h1>
+        <p style="text-align: center; font-size: 18px; margin-bottom: 30px;">
+            Master the art of tuning PD controllers! Adjust parameters and see how they affect robot performance.
+        </p>
+        
+        <div style="background: linear-gradient(135deg, #ff6b6b, #4ecdc4); padding: 20px; border-radius: 15px; margin-bottom: 30px; text-align: center;">
+            <h2 style="color: white; margin-top: 0;">🚀 Quick Start Guide</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: white; margin: 0 0 10px 0;">1️⃣ Try "Oscillating"</h4>
+                    <p style="margin: 0; font-size: 14px;">Click preset → Start simulation → Watch the robot shake!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: white; margin: 0 0 10px 0;">2️⃣ Add Damping</h4>
+                    <p style="margin: 0; font-size: 14px;">Increase Kd to 0.3-0.5 → See oscillations calm down</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: white; margin: 0 0 10px 0;">3️⃣ Find Balance</h4>
+                    <p style="margin: 0; font-size: 14px;">Try "Balanced" preset → Smooth, fast alignment!</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px;">
+                    <h4 style="color: white; margin: 0 0 10px 0;">4️⃣ Experiment</h4>
+                    <p style="margin: 0; font-size: 14px;">Drag robot around → Try different presets → Learn!</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h3>🎛️ Controller Parameters</h3>
+                
+                <div class="control-group">
+                    <label>Proportional Gain (Kp): <span id="kpValue" class="value-display">0.5</span></label>
+                    <input type="range" id="kp" min="0" max="2.0" step="0.01" value="0.5">
+                    <small>Higher = stronger response to error (try 1.5+ for oscillation!)</small>
+                </div>
+                
+                <div class="control-group">
+                    <label>Derivative Gain (Kd): <span id="kdValue" class="value-display">0.1</span></label>
+                    <input type="range" id="kd" min="0" max="1.0" step="0.01" value="0.1">
+                    <small>Higher = more damping (prevents overshoot)</small>
+                </div>
+                
+                <div class="control-group">
+                    <label>Deadband: <span id="deadbandValue" class="value-display">3.5°</span></label>
+                    <input type="range" id="deadband" min="0" max="10" step="0.5" value="3.5">
+                    <small>No correction within this range</small>
+                </div>
+                
+                <div class="preset-buttons">
+                    <h4>Quick Presets:</h4>
+                    <button class="preset-btn" onclick="setPreset('conservative')">Conservative</button>
+                    <button class="preset-btn" onclick="setPreset('balanced')">Balanced</button>
+                    <button class="preset-btn active" onclick="setPreset('aggressive')">Aggressive</button>
+                    <button class="preset-btn" onclick="setPreset('oscillating')">Oscillating</button>
+                    <button class="preset-btn" onclick="setPreset('sluggish')">Sluggish</button>
+                    <button class="preset-btn" onclick="setPreset('custom')">Custom</button>
+                </div>
+                
+                <div class="scenario-buttons">
+                    <h4>Test Scenarios:</h4>
+                    <button class="scenario-btn" onclick="startScenario('static')">Static Target</button>
+                    <button class="scenario-btn" onclick="startScenario('moving')">Moving Target</button>
+                    <button class="scenario-btn" onclick="startScenario('disturbance')">Disturbance</button>
+                    <button class="scenario-btn" onclick="startScenario('noise')">Noisy Sensor</button>
+                </div>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <button onclick="startSimulation()" style="background: #4ecdc4; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px;">
+                        ▶️ Start Simulation
+                    </button>
+                    <button onclick="resetSimulation()" style="background: #ff6b6b; color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; margin: 5px;">
+                        🔄 Reset
+                    </button>
+                </div>
+            </div>
+            
+            <div class="simulation-area">
+                <h3>🤖 Robot Simulation</h3>
+                <div class="control-instructions">
+                    <strong>🎮 Controls:</strong><br>
+                    <strong>Move:</strong> Drag robot with mouse<br>
+                    <strong>Rotate:</strong> Mouse wheel, buttons below, or A/D keys<br>
+                    <strong>Target:</strong> Static position (doesn't move)<br>
+                    <strong>Reset:</strong> R key or Reset button<br>
+                    <strong>Start:</strong> Spacebar or Start Simulation button
+                </div>
+                <div class="rotation-controls">
+                    <button class="rotate-btn" id="rotateLeft" onclick="rotateRobotLeft()">↶ Rotate Left</button>
+                    <button class="rotate-btn" id="rotateRight" onclick="rotateRobotRight()">↷ Rotate Right</button>
+                    <button class="rotate-btn" id="resetRotation" onclick="resetRobotRotation()">🔄 Reset</button>
+                </div>
+                <div style="text-align: center; margin: 10px 0; color: #ffd700;">
+                    <strong>Current Angle: <span id="currentAngle">0°</span></strong>
+                </div>
+                <div style="position: relative; height: 300px; background: rgba(0,0,0,0.2); border-radius: 10px; margin: 20px 0;">
+                    <canvas id="trailCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 10px; pointer-events: none;"></canvas>
+                    <div class="robot" id="robot" style="top: 50%; left: 20%;"></div>
+                    <div class="target" id="target" style="top: 50%; left: 80%;"></div>
+                </div>
+                
+                <div class="status-panel">
+                    <h4>📊 Performance Metrics</h4>
+                    <div class="metric">
+                        <span class="metric-label">Current Error:</span>
+                        <span class="metric-value" id="currentError">0.0°</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Controller Output:</span>
+                        <span class="metric-value" id="controllerOutput">0.0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Angular Velocity:</span>
+                        <span class="metric-value" id="angularVelocity">0.0°/s</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Settling Time:</span>
+                        <span class="metric-value" id="settlingTime">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Overshoot:</span>
+                        <span class="metric-value" id="overshoot">0%</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Stability:</span>
+                        <span class="metric-value" id="stability">
+                            <span class="performance-indicator excellent"></span>Excellent
+                        </span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Response Speed:</span>
+                        <span class="metric-value" id="responseSpeed">
+                            <span class="performance-indicator good"></span>Good
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="graph-container">
+            <h3>📈 Performance Graph</h3>
+            <canvas id="graphCanvas" width="800" height="250"></canvas>
+        </div>
+        
+        <div class="explanation">
+            <h3>🧠 Understanding PD Control</h3>
+            
+            <div class="formula-box">
+                <strong>PD Controller Formula:</strong><br>
+                Output = (Kp × Error) + (Kd × Rate of Change)<br>
+                <small>Where Error = Target Angle - Current Angle</small>
+            </div>
+            
+            <div class="analogy-box">
+                <h4>🎯 Think of it like balancing a stick on your finger:</h4>
+                <p><strong>Proportional (Kp):</strong> The more the stick tilts, the more you move your finger to correct it. If it's leaning far left, you move your finger far right. If it's barely tilted, you make a small correction.</p>
+                <p><strong>Derivative (Kd):</strong> If the stick is falling fast, you need to react quickly and move your finger more. If it's falling slowly, you can make gentler corrections. This prevents overshooting!</p>
+                <p><strong>Deadband:</strong> When the stick is almost perfectly balanced, you stop making tiny adjustments to avoid constant jittering.</p>
+            </div>
+            
+            <h4>🎮 Interactive Tuning Guide:</h4>
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin: 15px 0;">
+                <h5>Step 1: Start with "Oscillating" preset</h5>
+                <p>Click "Oscillating" and start the simulation. Watch the robot shake back and forth - this shows what happens with too much Kp and too little Kd!</p>
+                
+                <h5>Step 2: Add damping</h5>
+                <p>Increase Kd to 0.3-0.5 while keeping Kp high. Watch how the oscillations get smaller and more controlled.</p>
+                
+                <h5>Step 3: Find the sweet spot</h5>
+                <p>Try the "Balanced" preset - this should show smooth, fast alignment without oscillation.</p>
+                
+                <h5>Step 4: Experiment with extremes</h5>
+                <p>Try "Sluggish" (too much damping) vs "Aggressive" (fast but might overshoot) to see the trade-offs.</p>
+            </div>
+            
+            <h4>🔍 What to Watch For:</h4>
+            <ul>
+                <li><strong>🔄 Oscillation:</strong> Robot shakes back and forth (too much Kp, too little Kd)</li>
+                <li><strong>🐌 Sluggish:</strong> Robot moves very slowly (too much Kd)</li>
+                <li><strong>🎯 Overshoot:</strong> Robot goes past target then comes back (too little Kd)</li>
+                <li><strong>⚡ Perfect:</strong> Fast, smooth approach with minimal overshoot</li>
+            </ul>
+            
+            <h4>🔧 Real-World Applications:</h4>
+            <ul>
+                <li><strong>🚗 Cruise Control:</strong> Maintains speed by adjusting gas pedal</li>
+                <li><strong>🌡️ Thermostat:</strong> Keeps room temperature stable</li>
+                <li><strong>📱 Phone Camera:</strong> Keeps image stable despite hand shake</li>
+                <li><strong>🚁 Drone:</strong> Maintains stable hover position</li>
+                <li><strong>🎮 Game Controller:</strong> Smooths joystick movements</li>
+                <li><strong>🤖 Robot Arms:</strong> Precise positioning for manufacturing</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let simulationRunning = false;
+        let animationId;
+        let startTime;
+        let dataPoints = [];
+        let maxDataPoints = 200;
+        let currentScenario = 'static';
+        let lastFrameTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+        
+        // Simulation state
+        let robotX = 0.2; // 0 to 1
+        let robotY = 0.5; // 0 to 1
+        let robotAngle = 0; // in radians
+        let targetX = 0.8; // Static target position
+        let targetY = 0.5; // Static target position
+        let robotVelocity = 0;
+        let robotAngularVelocity = 0;
+        let lastError = 0;
+        let lastTime = 0;
+        let settlingTime = null;
+        let maxOvershoot = 0;
+        let isSettled = false;
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        let trailPoints = [];
+        let maxTrailPoints = 100;
+        
+        // Scenario parameters - target is always static now
+        const scenarios = {
+            static: { disturbance: 0, noise: 0 },
+            moving: { disturbance: 0, noise: 0 },
+            disturbance: { disturbance: 0.2, noise: 0 },
+            noise: { disturbance: 0, noise: 0.05 }
+        };
+        
+        function updateDisplay() {
+            const kpValue = document.getElementById('kp').value;
+            const kdValue = document.getElementById('kd').value;
+            const deadbandValue = document.getElementById('deadband').value;
+            
+            document.getElementById('kpValue').textContent = kpValue;
+            document.getElementById('kdValue').textContent = kdValue;
+            document.getElementById('deadbandValue').textContent = deadbandValue + '°';
+        }
+        
+        
+        function updateRobotVisuals() {
+            const robot = document.getElementById('robot');
+            const target = document.getElementById('target');
+            const currentAngleDisplay = document.getElementById('currentAngle');
+            
+            // Update robot position
+            robot.style.left = (robotX * 100) + '%';
+            robot.style.top = (robotY * 100) + '%';
+            
+            // Update robot rotation (both robot and arrow rotate together)
+            robot.style.transform = `rotate(${robotAngle * 180 / Math.PI}deg)`;
+            
+            // Update target position (static)
+            target.style.left = (targetX * 100) + '%';
+            target.style.top = (targetY * 100) + '%';
+            
+            // Update angle display
+            if (currentAngleDisplay) {
+                const angleDegrees = (robotAngle * 180 / Math.PI).toFixed(1);
+                currentAngleDisplay.textContent = angleDegrees + '°';
+            }
+            
+            // Update button states
+            updateButtonStates();
+        }
+        
+        function updateButtonStates() {
+            const rotateLeft = document.getElementById('rotateLeft');
+            const rotateRight = document.getElementById('rotateRight');
+            const resetRotation = document.getElementById('resetRotation');
+            
+            const disabled = simulationRunning;
+            
+            if (rotateLeft) rotateLeft.disabled = disabled;
+            if (rotateRight) rotateRight.disabled = disabled;
+            if (resetRotation) resetRotation.disabled = disabled;
+        }
+        
+        function getMousePos(e, container) {
+            const rect = container.getBoundingClientRect();
+            return {
+                x: (e.clientX - rect.left) / rect.width,
+                y: (e.clientY - rect.top) / rect.height
+            };
+        }
+        
+        function startDrag(e) {
+            if (simulationRunning) return;
+            isDragging = true;
+            const simulationArea = document.querySelector('.simulation-area > div:last-child');
+            const pos = getMousePos(e, simulationArea);
+            dragOffset.x = pos.x - robotX;
+            dragOffset.y = pos.y - robotY;
+            e.preventDefault();
+        }
+        
+        function drag(e) {
+            if (!isDragging || simulationRunning) return;
+            const simulationArea = document.querySelector('.simulation-area > div:last-child');
+            const pos = getMousePos(e, simulationArea);
+            robotX = Math.max(0.05, Math.min(0.95, pos.x - dragOffset.x));
+            robotY = Math.max(0.05, Math.min(0.95, pos.y - dragOffset.y));
+            updateRobotVisuals();
+            e.preventDefault();
+        }
+        
+        function endDrag(e) {
+            isDragging = false;
+            e.preventDefault();
+        }
+        
+        function rotateRobot(e) {
+            if (simulationRunning) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            robotAngle += delta;
+            updateRobotVisuals();
+        }
+        
+        function rotateRobotLeft() {
+            if (simulationRunning) return;
+            robotAngle -= 0.2; // Rotate left by 0.2 radians (~11.5 degrees)
+            updateRobotVisuals();
+        }
+        
+        function rotateRobotRight() {
+            if (simulationRunning) return;
+            robotAngle += 0.2; // Rotate right by 0.2 radians (~11.5 degrees)
+            updateRobotVisuals();
+        }
+        
+        function resetRobotRotation() {
+            if (simulationRunning) return;
+            robotAngle = 0;
+            updateRobotVisuals();
+        }
+        
+        function handleKeyPress(e) {
+            if (simulationRunning) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'a':
+                case 'arrowleft':
+                    rotateRobotLeft();
+                    e.preventDefault();
+                    break;
+                case 'd':
+                case 'arrowright':
+                    rotateRobotRight();
+                    e.preventDefault();
+                    break;
+                case 'r':
+                    resetRobotRotation();
+                    e.preventDefault();
+                    break;
+                case ' ':
+                    // Spacebar to start simulation
+                    startSimulation();
+                    e.preventDefault();
+                    break;
+            }
+        }
+        
+        function setPreset(preset) {
+            const presets = {
+                conservative: { kp: 0.2, kd: 0.4, deadband: 5 },
+                balanced: { kp: 0.5, kd: 0.2, deadband: 3.5 },
+                aggressive: { kp: 1.0, kd: 0.1, deadband: 2 },
+                oscillating: { kp: 1.8, kd: 0.05, deadband: 1 },
+                sluggish: { kp: 0.1, kd: 0.8, deadband: 8 },
+                custom: { kp: 0.5, kd: 0.2, deadband: 3.5 }
+            };
+            
+            const config = presets[preset];
+            document.getElementById('kp').value = config.kp;
+            document.getElementById('kd').value = config.kd;
+            document.getElementById('deadband').value = config.deadband;
+            
+            // Update active button
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update display to show new values
+            updateDisplay();
+        }
+        
+        function startScenario(scenario) {
+            currentScenario = scenario;
+            resetSimulation();
+        }
+        
+        function startSimulation() {
+            if (simulationRunning) return;
+            
+            simulationRunning = true;
+            startTime = Date.now();
+            dataPoints = [];
+            settlingTime = null;
+            maxOvershoot = 0;
+            isSettled = false;
+            
+            // Update button states
+            updateButtonStates();
+            
+            // Don't reset robot position - use current position
+            robotVelocity = 0;
+            robotAngularVelocity = 0;
+            lastError = 0;
+            lastTime = 0;
+            
+            function animate() {
+                if (!simulationRunning) return;
+                
+                const currentTime = Date.now();
+                
+                // Frame rate limiting
+                if (currentTime - lastFrameTime < frameInterval) {
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                lastFrameTime = currentTime;
+                
+                const deltaTime = (currentTime - lastTime) / 1000;
+                
+                if (lastTime === 0) {
+                    lastTime = currentTime;
+                    animationId = requestAnimationFrame(animate);
+                    return;
+                }
+                
+                // Target position is static - no movement
+                // Add disturbance to robot position
+                const scenario = scenarios[currentScenario];
+                if (Math.random() < 0.01) { // 1% chance per frame
+                    robotX += (Math.random() - 0.5) * scenario.disturbance;
+                    robotY += (Math.random() - 0.5) * scenario.disturbance;
+                }
+                
+                // Calculate angle to target
+                const dx = targetX - robotX;
+                const dy = targetY - robotY;
+                const targetAngle = Math.atan2(dy, dx);
+                
+                // Calculate angular error
+                let error = targetAngle - robotAngle;
+                
+                // Normalize angle to [-π, π]
+                while (error > Math.PI) error -= 2 * Math.PI;
+                while (error < -Math.PI) error += 2 * Math.PI;
+                
+                error += (Math.random() - 0.5) * scenario.noise;
+                
+                // PD Controller for angular control
+                const kp = parseFloat(document.getElementById('kp').value);
+                const kd = parseFloat(document.getElementById('kd').value);
+                const deadband = parseFloat(document.getElementById('deadband').value) * Math.PI / 180; // Convert to radians
+                
+                let derivative = 0;
+                if (deltaTime > 0.001) {
+                    derivative = (error - lastError) / deltaTime;
+                }
+                
+                let output = 0;
+                if (Math.abs(error) > deadband) {
+                    output = (kp * error) + (kd * derivative);
+                    output = Math.max(-20, Math.min(20, output)); // Increased limits for more dramatic effects
+                }
+                
+                // Update robot angle with more realistic physics
+                robotAngularVelocity += output * deltaTime * 5; // Scale for better visibility
+                robotAngularVelocity *= 0.98; // Less damping to show oscillations better
+                robotAngle += robotAngularVelocity * deltaTime;
+                
+                // Update visual elements
+                updateRobotVisuals();
+                
+                // Add point to trail
+                trailPoints.push({ x: robotX, y: robotY, time: currentTime });
+                if (trailPoints.length > maxTrailPoints) {
+                    trailPoints.shift();
+                }
+                
+                // Draw trail
+                drawTrail();
+                
+                // Update metrics
+                const trueError = Math.abs(error) * 180 / Math.PI; // Convert to degrees
+                document.getElementById('currentError').textContent = trueError.toFixed(1) + '°';
+                document.getElementById('controllerOutput').textContent = output.toFixed(2);
+                document.getElementById('angularVelocity').textContent = (robotAngularVelocity * 180 / Math.PI).toFixed(1) + '°/s';
+                
+                // Track settling time
+                if (!isSettled && trueError < 2) {
+                    isSettled = true;
+                    settlingTime = (currentTime - startTime) / 1000;
+                    document.getElementById('settlingTime').textContent = settlingTime.toFixed(1) + 's';
+                }
+                
+                // Track overshoot
+                const overshoot = Math.max(0, trueError - 2);
+                maxOvershoot = Math.max(maxOvershoot, overshoot);
+                document.getElementById('overshoot').textContent = maxOvershoot.toFixed(1) + '%';
+                
+                // Check for oscillation and update robot visual state
+                const recentErrors = dataPoints.slice(-10).map(p => p.error);
+                let isOscillating = false;
+                if (recentErrors.length >= 5) {
+                    const variance = recentErrors.reduce((sum, err, i) => {
+                        if (i === 0) return 0;
+                        return sum + Math.pow(err - recentErrors[i-1], 2);
+                    }, 0) / (recentErrors.length - 1);
+                    isOscillating = variance > 5; // Threshold for oscillation detection
+                }
+                
+                // Update robot visual state
+                const robot = document.getElementById('robot');
+                if (isOscillating) {
+                    robot.classList.add('oscillating');
+                } else {
+                    robot.classList.remove('oscillating');
+                }
+                
+                // Update performance indicators (only every 10 frames to improve performance)
+                if (dataPoints.length % 10 === 0) {
+                    updatePerformanceIndicators();
+                }
+                
+                // Store data for graph
+                dataPoints.push({
+                    time: (currentTime - startTime) / 1000,
+                    error: trueError,
+                    output: output,
+                    target: targetAngle * 180 / Math.PI
+                });
+                
+                if (dataPoints.length > maxDataPoints) {
+                    dataPoints.shift();
+                }
+                
+                // Draw graph (only every 5 frames to improve performance)
+                if (dataPoints.length % 5 === 0) {
+                    drawGraph();
+                }
+                
+                lastError = error;
+                lastTime = currentTime;
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            animate();
+        }
+        
+        function updatePerformanceIndicators() {
+            const stability = document.getElementById('stability');
+            const responseSpeed = document.getElementById('responseSpeed');
+            
+            // Stability based on oscillation (optimized calculation)
+            const recentErrors = dataPoints.slice(-20).map(p => p.error);
+            let variance = 0;
+            if (recentErrors.length > 1) {
+                const mean = recentErrors.reduce((a, b) => a + b, 0) / recentErrors.length;
+                variance = recentErrors.reduce((sum, err) => sum + Math.pow(err - mean, 2), 0) / recentErrors.length;
+            }
+            
+            // Update stability indicator
+            let stabilityClass = 'poor';
+            let stabilityText = 'Poor';
+            if (variance < 1) {
+                stabilityClass = 'excellent';
+                stabilityText = 'Excellent';
+            } else if (variance < 4) {
+                stabilityClass = 'good';
+                stabilityText = 'Good';
+            } else if (variance < 10) {
+                stabilityClass = 'fair';
+                stabilityText = 'Fair';
+            }
+            stability.innerHTML = `<span class="performance-indicator ${stabilityClass}"></span>${stabilityText}`;
+            
+            // Response speed based on settling time
+            if (settlingTime) {
+                let speedClass = 'poor';
+                let speedText = 'Poor';
+                if (settlingTime < 2) {
+                    speedClass = 'excellent';
+                    speedText = 'Excellent';
+                } else if (settlingTime < 4) {
+                    speedClass = 'good';
+                    speedText = 'Good';
+                } else if (settlingTime < 6) {
+                    speedClass = 'fair';
+                    speedText = 'Fair';
+                }
+                responseSpeed.innerHTML = `<span class="performance-indicator ${speedClass}"></span>${speedText}`;
+            }
+        }
+        
+        function drawTrail() {
+            const canvas = document.getElementById('trailCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (trailPoints.length < 2) return;
+            
+            // Draw trail with fading effect
+            ctx.strokeStyle = 'rgba(255, 107, 107, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            trailPoints.forEach((point, index) => {
+                const x = point.x * canvas.width;
+                const y = point.y * canvas.height;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+        }
+        
+        function drawGraph() {
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            if (dataPoints.length < 2) return;
+            
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(50, height - 30);
+            ctx.lineTo(width - 20, height - 30);
+            ctx.moveTo(50, 20);
+            ctx.lineTo(50, height - 30);
+            ctx.stroke();
+            
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 10; i++) {
+                const x = 50 + (i / 10) * (width - 70);
+                ctx.beginPath();
+                ctx.moveTo(x, 20);
+                ctx.lineTo(x, height - 30);
+                ctx.stroke();
+            }
+            
+            // Draw error line
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            dataPoints.forEach((point, index) => {
+                const x = 50 + (index / (dataPoints.length - 1)) * (width - 70);
+                const y = height - 30 - (point.error / 20) * (height - 50);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.stroke();
+            
+            // Draw target line
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(50, height - 30 - 2);
+            ctx.lineTo(width - 20, height - 30 - 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Draw labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Error (degrees)', 10, height / 2);
+            ctx.fillText('Time (s)', width / 2, height - 5);
+            ctx.fillText('20°', 10, 25);
+            ctx.fillText('0°', 10, height - 25);
+        }
+        
+        function resetSimulation() {
+            simulationRunning = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            
+            // Reset robot position and angle
+            robotX = 0.2;
+            robotY = 0.5;
+            robotAngle = 0;
+            // Target position remains static
+            robotVelocity = 0;
+            robotAngularVelocity = 0;
+            lastError = 0;
+            lastTime = 0;
+            settlingTime = null;
+            maxOvershoot = 0;
+            isSettled = false;
+            dataPoints = [];
+            trailPoints = [];
+            
+            // Reset displays
+            document.getElementById('currentError').textContent = '0.0°';
+            document.getElementById('settlingTime').textContent = '--';
+            document.getElementById('overshoot').textContent = '0%';
+            document.getElementById('stability').innerHTML = '<span class="performance-indicator excellent"></span>Excellent';
+            document.getElementById('responseSpeed').innerHTML = '<span class="performance-indicator good"></span>Good';
+            
+            // Reset visual elements and button states
+            updateRobotVisuals();
+            
+            // Clear graph
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Clear trail
+            const trailCanvas = document.getElementById('trailCanvas');
+            if (trailCanvas) {
+                const trailCtx = trailCanvas.getContext('2d');
+                trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners for controls
+            const kpSlider = document.getElementById('kp');
+            const kdSlider = document.getElementById('kd');
+            const deadbandSlider = document.getElementById('deadband');
+            
+            // Event listeners - use input events like the working projectile simulator
+            kpSlider.addEventListener('input', updateDisplay);
+            kdSlider.addEventListener('input', updateDisplay);
+            deadbandSlider.addEventListener('input', updateDisplay);
+            
+            // Robot interaction event listeners
+            const robot = document.getElementById('robot');
+            const simulationArea = document.querySelector('.simulation-area > div:last-child');
+            
+            if (robot) {
+                robot.addEventListener('mousedown', startDrag);
+            }
+            // Only add global mouse events when dragging robot
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    drag(e);
+                }
+            });
+            document.addEventListener('mouseup', function(e) {
+                if (isDragging) {
+                    endDrag(e);
+                }
+            });
+            
+            if (simulationArea) {
+                simulationArea.addEventListener('wheel', rotateRobot);
+            }
+            
+            // Add keyboard event listener
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Initialize
+            updateDisplay();
+            updateRobotVisuals();
+            
+            // Force initial display update
+            setTimeout(updateDisplay, 100);
+        });
+    </script>
+</body>
+</html>
