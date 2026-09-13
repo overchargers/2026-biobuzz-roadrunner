@@ -167,5 +167,6 @@ public class IntakeSubsystem {
             return "NOT INITIALIZED";
         if (currentPower > 0.05)
             return "RUNNING";
+        return "Running but seems to be dead. :(";
     }
 }

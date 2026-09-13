@@ -175,8 +175,6 @@ public class SimpleIntegratedTeleOpMode extends LinearOpMode {
 
         // Initialize telemetry subsystem
         telemetryDisplay = new TelemetrySubsystem(telemetry);
-
-        telemetryDisplay.addData("Status", "Initializing subsystems...");
         telemetryDisplay.update();
 
         // Initialize all subsystems
@@ -289,18 +287,9 @@ public class SimpleIntegratedTeleOpMode extends LinearOpMode {
                 telemetry.addData("AprilTag Alliance", isRedAlliance ? "RED (Tag " + RED_TAG_ID + ")" : "BLUE (Tag " + BLUE_TAG_ID + ")");
                 telemetry.update();
             }
-            if (status != null) {
-                if (isRedAlliance) {
-                    status.redAlliance();
-                } else {
-                    status.blueAlliance();
-                }
-            }
         }
 
         // Update previous button states
-        prevA = currentA;
-        prevB = currentB;
         prevY = currentY;
         prevStart = currentStart;
         prevDpadUp = currentDpadUp;
@@ -360,7 +349,7 @@ public class SimpleIntegratedTeleOpMode extends LinearOpMode {
 
         // Update intake - respect vision's servo pause/resume control
         if (intake != null) {
-            if (intakeConveyorToggle) {
+            if (true) {
                 intake.start();
             } else {
                 intake.stop();
@@ -379,24 +368,7 @@ public class SimpleIntegratedTeleOpMode extends LinearOpMode {
         }
 
         // Update status light (skip when shooting to avoid frequent updates)
-        if (status != null && !gamepad1.right_bumper) {
-            if (emergencyStop) {
-                status.error();
-            } else if (autoAimEnabled && vision != null && vision.hasTarget() && ballistics != null
-                    && ballistics.canHitTarget()) {
-                status.readyToFire();
-            } else if (vision != null && vision.hasTarget()) {
-                status.targetDetected();
-            } else if (!autoAimEnabled) {
-                status.manualMode();
-            } else {
-                if (isRedAlliance) {
-                    status.redAlliance();
-                } else {
-                    status.blueAlliance();
-                }
-            }
-        }
+
     }
 
     //  TELEMETRY 
@@ -411,10 +383,8 @@ public class SimpleIntegratedTeleOpMode extends LinearOpMode {
         // Display all sections
         telemetryDisplay.displaySystemStatus(loopInterval, emergencyStop);
 
-        telemetryDisplay.displayDriveStatus(currentDriveSpeed, autoAlignEnabled, vision, autoAimEnabled,
-                alignment != null ? alignment.PARAMS.deadband : 0,
-                alignment != null ? alignment.PARAMS.deadband : 0);
-        telemetryDisplay.displayVisionStatus(vision);
+        telemetryDisplay.displayDriveStatus(currentDriveSpeed, vision);
+
 
         // Display current alliance selection
         telemetry.addData("🎯 AprilTag Alliance", isRedAlliance ?

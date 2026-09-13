@@ -307,11 +307,6 @@ public class VisionSubsystem {
         if (skipUpdate) {
             // Keep last stable target but don't update
             currentTarget = lastStableTarget;
-            // If not shooting, resume servos
-            if (!isShootingRequested && servosPaused) {
-                resumeServos(intakeSubsystem, transferSubsystem);
-            }
-            // Return desired servo state
         }
 
         performDetection();
@@ -368,7 +363,7 @@ public class VisionSubsystem {
      * Update target detection - call this in the main loop (default, no skip)
      */
     public void update() {
-        update(false, null, null);
+        update(false);
     }
 
   
