@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.Range;
 
@@ -17,12 +18,12 @@ public class IntakeSubsystem {
     // ==================== CONFIGURATION PARAMETERS ====================
 
     public static final double MAX_INTAKE_SPEED = 1.0;
-    public static final CRServo.Direction SERVO_DIRECTION = CRServo.Direction.REVERSE;
-    public static final String HARDWARE_NAME = "intakeServo";
+    public static final DcMotor.Direction MOTOR_DIRECTION = DcMotor.Direction.REVERSE;
+    public static final String HARDWARE_NAME = "intakeMotor";
 
     // ==================== HARDWARE COMPONENTS ====================
 
-    private CRServo intakeServo = null;
+    private DcMotor intakeMotor = null;
     private boolean isInitialized = false;
 
     // ==================== STATE VARIABLES ====================
@@ -37,6 +38,7 @@ public class IntakeSubsystem {
      */
     public IntakeSubsystem() {
         // Use default values
+
     }
 
     // ==================== INITIALIZATION ====================
@@ -49,9 +51,10 @@ public class IntakeSubsystem {
      */
     public boolean init(HardwareMap hardwareMap) {
         try {
-            intakeServo = hardwareMap.get(CRServo.class, HARDWARE_NAME);
-            intakeServo.setDirection(SERVO_DIRECTION);
-            intakeServo.setPower(0.0);
+            intakeMotor = hardwareMap.get(DcMotor.class, HARDWARE_NAME);
+            intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            intakeMotor.setDirection(MOTOR_DIRECTION);
+            intakeMotor.setPower(0.0);
 
             isInitialized = true;
             return true;
@@ -70,12 +73,12 @@ public class IntakeSubsystem {
      * @param power Power level (0.0 to 1.0, will be scaled to maxIntakeSpeed)
      */
     public void start(double power) {
-        if (!isInitialized || intakeServo == null)
+        if (!isInitialized || intakeMotor == null)
             return;
 
         power = Range.clip(power, 0.0, 1.0);
         currentPower = power * MAX_INTAKE_SPEED;
-        intakeServo.setPower(currentPower);
+        intakeMotor.setPower(currentPower);
         isRunning = currentPower > 0.05;
     }
 
@@ -92,12 +95,12 @@ public class IntakeSubsystem {
      * @param power Power level (0.0 to 1.0, will be scaled to maxIntakeSpeed)
      */
     public void reverse(double power) {
-        if (!isInitialized || intakeServo == null)
+        if (!isInitialized || intakeMotor == null)
             return;
 
         power = Range.clip(power, 0.0, 1.0);
         currentPower = -power * MAX_INTAKE_SPEED;
-        intakeServo.setPower(currentPower);
+        intakeMotor.setPower(currentPower);
         isRunning = Math.abs(currentPower) > 0.05;
     }
 
@@ -112,11 +115,11 @@ public class IntakeSubsystem {
      * Stop the intake
      */
     public void stop() {
-        if (!isInitialized || intakeServo == null)
+        if (!isInitialized || intakeMotor == null)
             return;
 
         currentPower = 0.0;
-        intakeServo.setPower(0.0);
+        intakeMotor.setPower(0.0);
         isRunning = false;
     }
 
@@ -127,12 +130,12 @@ public class IntakeSubsystem {
      * @param power Power level (-1.0 to 1.0)
      */
     public void setPower(double power) {
-        if (!isInitialized || intakeServo == null)
+        if (!isInitialized || intakeMotor == null)
             return;
 
         power = Range.clip(power, -1.0, 1.0);
         currentPower = power * MAX_INTAKE_SPEED;
-        intakeServo.setPower(currentPower);
+        intakeMotor.setPower(currentPower);
         isRunning = Math.abs(currentPower) > 0.05;
     }
 
@@ -167,5 +170,6 @@ public class IntakeSubsystem {
             return "NOT INITIALIZED";
         if (currentPower > 0.05)
             return "RUNNING";
+        return "Running but seems to be dead. :(";
     }
 }

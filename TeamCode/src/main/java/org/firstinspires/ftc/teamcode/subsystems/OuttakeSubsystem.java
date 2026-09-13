@@ -125,14 +125,14 @@ public class OuttakeSubsystem {
      * Get current servo position
      */
     public double getServoPosition() {
-        return currentServoPosition;
+        return 0.0;
     }
 
     /**
      * Check if currently outtaking
      */
     public boolean isOuttaking() {
-        return pusherState != PusherState.IDLE;
+        return false;
     }
 
     /**
