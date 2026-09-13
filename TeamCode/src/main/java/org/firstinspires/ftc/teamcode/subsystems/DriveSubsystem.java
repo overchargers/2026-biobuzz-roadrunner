@@ -112,7 +112,6 @@ public class DriveSubsystem {
 
         } catch (Exception e) {
             isInitialized = false;
-            DataLogger.logError(SUBSYSTEM_NAME, "Failed to initialize drive subsystem", e);
             return false;
         }
     }
@@ -157,8 +156,7 @@ public class DriveSubsystem {
         // Set motor powers
         setMotorPowers(frontLeftPower, frontRightPower, backLeftPower, backRightPower);
         
-        // Log drive data periodically
-        logDriveData(forward, strafe, turn, frontLeftPower, frontRightPower, backLeftPower, backRightPower);
+
     }
 
     /**
